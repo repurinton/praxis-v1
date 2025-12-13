@@ -15,5 +15,12 @@ def test_csv_evidence_store_resolves_numeric(tmp_path: Path):
     assert ev.locator == "account=Revenue"
     assert ev.content_hash is not None
 
-    missing = store.get_numeric("DoesNotExist")
-    assert missing is None
+
+def test_csv_evidence_store_missing_account(tmp_path: Path):
+    p = tmp_path / "trial_balance.csv"
+    p.write_text("account,amount\nRevenue,100\n")
+
+    store = CSVEvidenceStore(p)
+
+    ev = store.get_numeric("DoesNotExist")
+    assert ev is None
