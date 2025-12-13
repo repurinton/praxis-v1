@@ -7,7 +7,7 @@ from praxis_agents.controller import controller_agent
 from praxis_agents.planner import planner_agent
 from praxis_core.generator_stub import generate_sample_claims
 from praxis_core.verification import verify_evidence_presence
-
+from praxis_core.release import decide_release
 
 
 def read_plan_text() -> str:
@@ -60,12 +60,16 @@ def main() -> None:
     # NOTE: Next milestone will inject:
     # Generator -> Claims -> verify_evidence_presence() -> Controller release decision
 
-    print("\n=== Generator → Verification Demo ===")
+    print("\n=== Generator → Verification → Release Demo ===")
 
     claims = generate_sample_claims()
     report = verify_evidence_presence(claims, min_attribution_coverage=1.0)
+    outcome = decide_release(report)
 
     print("Verification status:", report.status.value)
+    print("Release decision:", outcome.decision.value)
+    print("Reason:", outcome.reason)
+
     print("Summary:", report.summary)
     for c in report.checks:
         print(f"- {c.claim_id}: {c.status.value} ({c.reason})")
