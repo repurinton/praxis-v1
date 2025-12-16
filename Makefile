@@ -1,9 +1,9 @@
 .PHONY: test eval-smoke eval
 
 test:
-\tpytest -q
+	pytest -q
 
 eval-smoke:
-\tpython -m evals.run_local --case evals/cases/smoke.yaml
+	python -m evals.run_local --case evals/cases/smoke.yaml
 
 eval: test eval-smoke
