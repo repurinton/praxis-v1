@@ -1,7 +1,3 @@
-# Python
-__pycache__/
-*.py[cod]
-
 # Virtual environments
 .venv/
 venv/
@@ -11,3 +7,24 @@ venv/
 
 # pytest
 .pytest_cache/
+
+# --- Praxis: synthetic outputs ---
+data/
+**/data/
+
+# --- Python build artifacts ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# --- Test/tool caches ---
+.mypy_cache/
+.ruff_cache/
+
+# --- OS/editor ---
+.DS_Store
+.vscode/
+.idea/
+
