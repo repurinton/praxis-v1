@@ -134,6 +134,25 @@ def _coerce_dict(obj: Any) -> Dict[str, Any]:
     return {"repr": repr(obj)}
 
 
+def _norm_token(x: Any) -> Optional[str]:
+    """
+    Normalize string-like and Enum(str, Enum) values for stable comparisons.
+    For Enum(str, Enum), json dumps often shows the value, but str(enum) can be 'EnumClass.member'.
+    """
+    if x is None:
+        return None
+    if hasattr(x, "value"):
+        try:
+            return str(getattr(x, "value"))
+        except Exception:
+            pass
+    # If it's already a str (including Enum that is a str subclass), return the underlying text.
+    try:
+        return str(x)
+    except Exception:
+        return None
+
+
 def _extract_coverage(verification: Any) -> Optional[float]:
     # Try common locations
     if isinstance(verification, dict):
@@ -162,7 +181,7 @@ def _extract_coverage(verification: Any) -> Optional[float]:
     return None
 
 
-def _extract_status_and_checks(verification: Any) -> Tuple[Optional[str], Any, Optional[str]]:
+def _extract_status_and_checks(verification: Any) -> Tuple[Optional[Any], Any, Optional[str]]:
     # returns (status, checks, summary)
     if isinstance(verification, dict):
         status = verification.get("status") or verification.get("verification_status")
@@ -176,7 +195,7 @@ def _extract_status_and_checks(verification: Any) -> Tuple[Optional[str], Any, O
     return status, checks, summary
 
 
-def _extract_release(release_obj: Any) -> Tuple[Optional[str], Optional[str]]:
+def _extract_release(release_obj: Any) -> Tuple[Optional[Any], Optional[str]]:
     # returns (decision, reason)
     if isinstance(release_obj, dict):
         return release_obj.get("decision"), release_obj.get("reason")
@@ -198,13 +217,17 @@ def run(case_path: Optional[str]) -> Dict[str, Any]:
     verification = verify_evidence_presence(claims)
     release_obj = decide_release(verification)
 
-    status, checks, summary = _extract_status_and_checks(_coerce_dict(verification) if not isinstance(verification, dict) else verification)
-    # status might be missing if verify_evidence_presence returns a non-dict; re-check on original
+    status, checks, summary = _extract_status_and_checks(
+        _coerce_dict(verification) if not isinstance(verification, dict) else verification
+    )
     if status is None:
         status, checks, summary = _extract_status_and_checks(verification)
 
     coverage = _extract_coverage(verification)
     decision, reason = _extract_release(release_obj)
+
+    status_s = _norm_token(status)
+    decision_s = _norm_token(decision)
 
     result: Dict[str, Any] = {
         "case": case,
@@ -216,11 +239,11 @@ def run(case_path: Optional[str]) -> Dict[str, Any]:
             "cwd": os.getcwd(),
         },
         "outputs": {
-            "verification_status": status,
+            "verification_status": status_s,
             "evidence_coverage": coverage,
             "summary": summary,
             "checks": checks,
-            "release_decision": decision,
+            "release_decision": decision_s,
             "release_reason": reason,
         },
     }
@@ -228,23 +251,28 @@ def run(case_path: Optional[str]) -> Dict[str, Any]:
     # Evaluate expectations (optional)
     expectations: Dict[str, Any] = {}
     verdicts: Dict[str, Any] = {}
+
     if "evidence_coverage_min" in case:
         expectations["evidence_coverage_min"] = case["evidence_coverage_min"]
         verdicts["evidence_coverage_min_ok"] = (coverage is not None and coverage >= float(case["evidence_coverage_min"]))
+
     if "evidence_coverage_max" in case:
         expectations["evidence_coverage_max"] = case["evidence_coverage_max"]
         verdicts["evidence_coverage_max_ok"] = (coverage is not None and coverage <= float(case["evidence_coverage_max"]))
+
     if "verification_status_in" in case:
-        expectations["verification_status_in"] = case["verification_status_in"]
-        verdicts["verification_status_ok"] = (status is not None and str(status) in set(case["verification_status_in"]))
+        allowed = {str(x).strip() for x in case["verification_status_in"]}
+        expectations["verification_status_in"] = sorted(allowed)
+        verdicts["verification_status_ok"] = (status_s is not None and status_s in allowed)
+
     if "release_decision_in" in case:
-        expectations["release_decision_in"] = case["release_decision_in"]
-        verdicts["release_decision_ok"] = (decision is not None and str(decision) in set(case["release_decision_in"]))
+        allowed = {str(x).strip() for x in case["release_decision_in"]}
+        expectations["release_decision_in"] = sorted(allowed)
+        verdicts["release_decision_ok"] = (decision_s is not None and decision_s in allowed)
 
     if expectations:
         result["expectations"] = expectations
         result["verdicts"] = verdicts
-        # Overall pass if all verdicts are True (and there is at least one verdict)
         result["pass"] = bool(verdicts) and all(bool(v) for v in verdicts.values())
     else:
         result["pass"] = None  # no expectations defined
