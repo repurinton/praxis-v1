@@ -1,0 +1,6 @@
+# Release-ready eval: will pass once all claims are evidence-backed
+name: release_ready
+
+evidence_coverage_min: 1.0
+verification_status_in: [pass]
+release_decision_in: [release]
