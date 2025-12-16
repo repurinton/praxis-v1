@@ -1,0 +1,8 @@
+# Smoke eval: governance-hold behavior is expected
+name: smoke_governance_hold
+
+# Expectations (deterministic)
+evidence_coverage_min: 0.5
+evidence_coverage_max: 0.5
+verification_status_in: [needs_review]
+release_decision_in: [hold]
