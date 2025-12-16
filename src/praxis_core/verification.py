@@ -5,6 +5,8 @@ from enum import Enum
 from typing import Any, Optional
 
 from praxis_core.claims import Claim
+from praxis_core.numeric_agreement import verify_numeric_agreement as _verify_numeric_agreement
+
 
 
 class VerificationStatus(str, Enum):
@@ -81,4 +83,22 @@ def verify_evidence_presence(
         status=overall,
         checks=tuple(checks),
         summary=f"evidence_coverage={coverage:.3f} ({with_ev}/{total}), threshold={min_attribution_coverage}",
+    )
+
+def verify_numeric_agreement(
+    claim_value: float,
+    evidence_value: float,
+    abs_tol: float = 0.0,
+    rel_tol: float = 0.0,
+):
+    """
+    Re-exported API entrypoint required by tests.
+
+    Delegates to praxis_core.numeric_agreement.verify_numeric_agreement.
+    """
+    return _verify_numeric_agreement(
+        claim_value=claim_value,
+        evidence_value=evidence_value,
+        abs_tol=abs_tol,
+        rel_tol=rel_tol,
     )

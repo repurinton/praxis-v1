@@ -1,4 +1,5 @@
 from pathlib import Path
+import os
 
 from dotenv import load_dotenv
 from agents import Runner
@@ -43,9 +44,14 @@ def main() -> None:
     roadmap = Runner.run_sync(planner_agent, input=planner_input)
 
     # 2) Controller selects next step
+
     controller_input = (
         "You are given a roadmap produced by PraxisPlanner.\n"
-        "Select the single next best small, reversible step to implement in this repo.\n\n"
+        "Select the single next best small, reversible step to implement in this repo.\n"
+        "Constraints:\n"
+        "- Do NOT create a new top-level claims.py.\n"
+        "- The canonical Claim/Evidence dataclasses already live in src/praxis_core/claims.py.\n"
+        "- Propose changes only within the existing src/praxis_core/* modules unless explicitly instructed.\n\n"
         "=== ROADMAP ===\n"
         f"{getattr(roadmap, 'final_output', getattr(roadmap, 'output', str(roadmap)))}\n"
         "=== END ROADMAP ===\n"
@@ -62,7 +68,13 @@ def main() -> None:
 
     print("\n=== Generator → Verification → Release Demo ===")
 
-    claims = generate_sample_claims()
+    dataset_root = os.environ.get("PRAXIS_DATASET_ROOT")
+    if dataset_root:
+        claims = generate_sample_claims(dataset_root)
+    else:
+        default_root = Path("data") / "synthetic"
+        claims = generate_sample_claims(default_root if default_root.exists() else None)
+
     report = verify_evidence_presence(claims, min_attribution_coverage=1.0)
     outcome = decide_release(report)
 
@@ -73,7 +85,6 @@ def main() -> None:
     print("Summary:", report.summary)
     for c in report.checks:
         print(f"- {c.claim_id}: {c.status.value} ({c.reason})")
-
 
 
 if __name__ == "__main__":
