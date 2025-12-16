@@ -28,3 +28,6 @@ dist/
 .vscode/
 .idea/
 
+
+# Local eval outputs
+/evals/out/
