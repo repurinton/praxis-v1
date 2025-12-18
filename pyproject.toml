@@ -5,6 +5,10 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "praxis"
 version = "0.1.0"
+description = "Praxis: evidence-backed verification and release gating"
+readme = "README.md"
+license = {file = "LICENSE"}
+authors = [{name = "Rob Purinton"}]
 requires-python = ">=3.10"
 dependencies = [
   "pandas>=2.0",
@@ -17,9 +21,20 @@ dev = [
 synth = [
   "numpy>=1.26",
 ]
+agents = [
+  "openai>=2.0.0",
+  "openai-agents>=0.1.0",
+  "python-dotenv>=1.0.0",
+  "PyYAML>=6.0",
+]
+
+[project.scripts]
+praxis-run = "praxis_agentkit.cli:main"
+praxis-eval = "praxis_eval.harness_cli:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
+include-package-data = true
 
 [tool.setuptools.packages.find]
 where = ["src"]
