@@ -13,7 +13,7 @@ def main() -> int:
     ap.add_argument("--case", default=None)
     args = ap.parse_args()
 
-    out_dir = Path("evals") / "out"
+    out_dir = Path("praxis_evals") / "out"
     out_dir.mkdir(parents=True, exist_ok=True)
 
     payload = run(args.case)

@@ -4,6 +4,6 @@ test:
 	python -m pytest -q
 
 eval-smoke:
-	python -m evals.run_local --case evals/cases/smoke.yaml
+	python -m evals.run_local --case praxis_evals/cases/smoke.yaml
 
 eval: test eval-smoke
