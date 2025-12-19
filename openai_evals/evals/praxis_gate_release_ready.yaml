@@ -1,0 +1,4 @@
+praxis_gate_release_ready.dev.v0:
+  class: praxis_eval.openai_gate_eval:PraxisGateEval
+  args:
+    samples_jsonl: praxis_evals/openai/release_ready.jsonl
