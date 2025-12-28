@@ -1,0 +1,78 @@
+{
+  "schema": "praxis.run_artifact.v1",
+  "timestamp": "20251227_184754",
+  "git_rev": "6c8e81b",
+  "run_source": "run.py",
+  "inputs": {
+    "dataset_root": null,
+    "min_attribution_coverage": 1.0
+  },
+  "planner": {
+    "enabled": true,
+    "output": "## Roadmap: Verification-Aware Autonomous CFO\n\n#### **Milestone 1: Claims & Evidence Data Model**\n\n- **Goal**: Lay the foundation by modeling \"claims\" and their \"evidence\" as explicit, first-class objects.\n- **Deliverables**:\n    - `claims.py`: Defines Claim and Evidence classes, including serialization.\n    - `tests/test_claims.py`: Unit tests for data model behavior.\n- **Acceptance Criteria**:\n    - Can create Claim/Evidence objects, serialize/deserialize them.\n    - Each claim must reference one or more evidence objects.\n    - Tests pass.\n- **Risks**:\n    - Over-complicating initial schema; mitigate with YAGNI (You Aren\u2019t Gonna Need It) principle.\n  \n---\n\n#### **Milestone 2: Evaluation Harness**\n\n- **Goal**: Provide an initial mechanism to evaluate claims for conformance and completeness early.\n- **Deliverables**:\n    - `evaluation.py`: Evaluation harness to check that every claim has attributed evidence and conforms to the data model.\n    - `tests/test_evaluation.py`: Tests for evaluation routines.\n- **Acceptance Criteria**:\n    - Evaluation returns \"pass/fail\" results with actionable messages.\n    - Failing cases block hypothetical \"release\" (mocked).\n    - 100% path coverage for all claim/evidence edge cases.\n- **Risks**:\n    - Too narrow evaluation; mitigate via listed and parameterized test cases.\n\n---\n\n#### **Milestone 3: Numeric Verification Engine**\n\n- **Goal**: Introduce deterministic verification for all numeric claims using source records.\n- **Deliverables**:\n    - `numeric_verifier.py`: Module comparing claim values with provided evidence source records.\n    - `sample_data/source_records.json`: Mock source records for tests.\n    - `tests/test_numeric_verifier.py`: Unit tests for numeric validation logic.\n- **Acceptance Criteria**:\n    - Numeric claims that do not match evidence cause verification to fail.\n    - All code paths and error cases are exercised in tests.\n- **Risks**:\n    - Source data ambiguity; mitigate by explicit test scenarios.\n\n---\n\n#### **Milestone 4: Verification Gate Module**\n\n- **Goal**: Block or allow release of claims/reports only if all verification/evidence criteria pass.\n- **Deliverables**:\n    - `verification_gate.py`: Orchestrates evaluation and numeric checking before \"release\".\n    - `tests/test_verification_gate.py`: Gate passes/fails under various scenarios.\n- **Acceptance Criteria**:\n    - Gate blocks release when evaluation or numeric verification fails.\n    - Provides clear diagnostics on blockage.\n- **Risks**:\n    - Overcoupled with downstream logic; mitigate by explicit, injectable dependencies.\n\n---\n\n#### **Milestone 5: Governance & Audit Logging**\n\n- **Goal**: Enable human-in-the-loop processes and auditability of all claim, evidence, and verification events.\n- **Deliverables**:\n    - `governance.py`: Simple approval workflow + logging for all claim-related actions.\n    - `audit_log.json`: Persistent log file for actions/invocations.\n    - `tests/test_governance.py`: Test all workflows and audit trails.\n- **Acceptance Criteria**:\n    - Human review, override, and sign-off can be simulated and are reflected in the audit log.\n    - All log events are timestamped and reconstructable for audit.\n- **Risks**:\n    - Logging gaps; mitigate with full workflow test coverage.\n\n---\n\n#### **Milestone 6: Metrics & Reporting Module**\n\n- **Goal**: Track and report evaluation, verification, and governance metrics to drive iteration.\n- **Deliverables**:\n    - `metrics.py`: Module for computing basic statistics (e.g., claims checked, failures, response times).\n    - `tests/test_metrics.py`: Unit tests covering metric aggregation and edge cases.\n- **Acceptance Criteria**:\n    - Metrics are updated after every evaluation/verification/gov action.\n    - Reports can be generated on demand.\n- **Risks**:\n    - Metrics bloat or lack of clarity; start with minimal metrics and expand as needed.\n\n---\n\n### **Key Principles Applied**\n- Each milestone is discrete, small, and reversible.\n- Explicit connections (objects, dependencies) between modules \u2014 no hidden/magic behaviors.\n- Evaluation is integrated from Milestone 2, preventing downstream surprises.\n\n---\n\n**Next Steps**: Begin with `claims.py` and `tests/test_claims.py` per Milestone 1.",
+    "output_len": 4238
+  },
+  "controller": {
+    "enabled": true,
+    "output": "**Next best step:**  \nCreate the initial Claim and Evidence data model, with serialization methods, in `src/praxis_core/claims.py`.\n\n---\n\n**File to edit:**\n- `src/praxis_core/claims.py` (full-file replace, if it already exists; otherwise, create)\n\n---\n\n**Replacement contents for src/praxis_core/claims.py:**\n\n```python\nfrom dataclasses import dataclass, field, asdict\nfrom typing import List, Any, Dict\nimport json\n\n\n@dataclass\nclass Evidence:\n    id: str\n    description: str\n    source: str  # URL or citation string\n\n    def to_dict(self) -> Dict[str, Any]:\n        return asdict(self)\n\n    @staticmethod\n    def from_dict(data: Dict[str, Any]) -> 'Evidence':\n        return Evidence(**data)\n\n\n@dataclass\nclass Claim:\n    id: str\n    statement: str\n    evidences: List[Evidence] = field(default_factory=list)\n\n    def to_dict(self) -> Dict[str, Any]:\n        d = asdict(self)\n        # flatten evidence to dicts\n        d[\"evidences\"] = [e.to_dict() for e in self.evidences]\n        return d\n\n    @staticmethod\n    def from_dict(data: Dict[str, Any]) -> 'Claim':\n        evidences = [Evidence.from_dict(ed) for ed in data.get(\"evidences\", [])]\n        return Claim(\n            id=data[\"id\"],\n            statement=data[\"statement\"],\n            evidences=evidences,\n        )\n\n    def to_json(self) -> str:\n        return json.dumps(self.to_dict())\n\n    @staticmethod\n    def from_json(data: str) -> 'Claim':\n        return Claim.from_dict(json.loads(data))\n```\n\n---\n\n**To verify progress, run:**\n```sh\nls src/praxis_core/claims.py\nhead -20 src/praxis_core/claims.py\n```\n*(No unit tests yet\u2014those are the next reversible step.)*",
+    "output_len": 1633
+  },
+  "claims": {
+    "count": 2,
+    "items": [
+      {
+        "id": "rev_total",
+        "text": "Total revenue reported in the trial balance.",
+        "value": null,
+        "unit": "USD",
+        "evidence": [
+          {
+            "source_id": "trial_balance.csv",
+            "locator": "account=Revenue",
+            "content_hash": "e7492dbe057774b463eddc0173885ba8ce3fb21cf3a0b974e3b29fff75fd4764",
+            "snippet": "Revenue balance=-2395713680.56",
+            "data_row": {
+              "account": "Revenue",
+              "debit": "0.0",
+              "credit": "2395713680.56",
+              "balance": "-2395713680.56",
+              "balance_pct": "-0.291012004411139"
+            }
+          }
+        ],
+        "evidence_count": 1
+      },
+      {
+        "id": "profit_positive",
+        "text": "The company is profitable.",
+        "value": null,
+        "unit": null,
+        "evidence": [],
+        "evidence_count": 0
+      }
+    ]
+  },
+  "verification": {
+    "status": "needs_review",
+    "checks": [
+      {
+        "claim_id": "rev_total",
+        "status": "pass",
+        "reason": "Evidence present."
+      },
+      {
+        "claim_id": "profit_positive",
+        "status": "fail",
+        "reason": "Missing evidence."
+      }
+    ],
+    "summary": "evidence_coverage=0.500 (1/2), threshold=1.0"
+  },
+  "release": {
+    "decision": "hold",
+    "reason": "Verification incomplete; human review or additional evidence required."
+  },
+  "extra": {
+    "cwd": "/Users/repurinton/praxis-v1/praxis-v1"
+  }
+}

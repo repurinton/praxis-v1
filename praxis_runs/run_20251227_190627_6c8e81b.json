@@ -1,0 +1,236 @@
+{
+  "schema": "praxis.run_artifact.v1",
+  "timestamp": "20251227_190627",
+  "git_rev": "6c8e81b",
+  "run_source": "praxis_gui.py",
+  "inputs": {
+    "dataset_root": null,
+    "min_attribution_coverage": 1.0
+  },
+  "planner": {
+    "enabled": true,
+    "output": "Here\u2019s an actionable, repo-oriented implementation roadmap for the Verification-Aware Autonomous CFO, based on the Praxis plan context.\n\n---\n\n## Milestone 1: Claims and Evidence Core Primitives\n\n**Goal**: Establish data models that ensure all financial claims are linked to explicit evidence.\n\n**Deliverables**:\n- `claims.py` \u2014 Defines `Claim` and `Evidence` classes, with validations.\n- `test_claims.py` \u2014 Unit tests verifying model invariants (e.g., claim without evidence raises error).\n\n**Acceptance Criteria**:\n- Claims cannot exist without evidence (tested invariant).\n- Evidence is a first-class, auditable object (attributes: source, timestamp, reference, etc.).\n- 90%+ test coverage for core objects.\n\n**Risks**:\n- Over-abstracting the primitives; mitigate by aiming for minimal, explicit design.\n\n---\n\n## Milestone 2: Simple Claim-Evidence Wiring & Repository\n\n**Goal**: Wire up explicit registration, storage, and retrieval of claims and their evidence.\n\n**Deliverables**:\n- `claim_repository.py` \u2014 In-memory repo supporting add, get, list.\n- `evidence_repository.py` \u2014 In-memory evidence store.\n- `test_repository.py` \u2014 Unit tests for storage, linkage, and retrieval.\n\n**Acceptance Criteria**:\n- Claims must be added with valid, linked evidence.\n- Retrieval guarantees evidence presence/validity.\n- Fails fast and loudly on orphaned or malformed claims.\n\n**Risks**:\n- Implicit association logic sneaking in; keep API signatures explicit.\n\n---\n\n## Milestone 3: Verification Gate Mechanism\n\n**Goal**: Implement configurable verification gates that block or allow claim progression.\n\n**Deliverables**:\n- `verification_gate.py` \u2014 Primitive gates (e.g., numeric check, evidence existence).\n- `verification_result.py` \u2014 Outcome type capturing result, reasons, evidentiary trail.\n- `test_verification.py` \u2014 Test suite for gate behavior and blocking logic.\n\n**Acceptance Criteria**:\n- Claims cannot \u201cpass\u201d unless all gates succeed (enforced in repo or workflow).\n- Failure is explicit and attributable.\n- Addition of new gates is composable and clear.\n\n**Risks**:\n- Verification logic complexity; mitigate by starting with simple, composable gates.\n\n---\n\n## Milestone 4: Evaluation Harness (Human + Automated Checkpoints)\n\n**Goal**: Build a test harness for evaluating metric-driven quality and human-in-the-loop governance.\n\n**Deliverables**:\n- `evaluation.py` \u2014 Metric definitions and scaffolding.\n- `eval_harness.py` \u2014 CLI tool to run evaluation suites over claim sets.\n- `human_review.py` \u2014 Stubs for manual checkpoint intervention.\n- `test_evaluation.py` \u2014 Unit/functional tests covering known failure/success cases.\n\n**Acceptance Criteria**:\n- Can run (mock or stub) evaluations with deterministic, measurable results.\n- Metrics: percentage of claims passing, types of failures, evidence coverage, human intervention events.\n- Reports are structured and reproducible.\n\n**Risks**:\n- Over-complicating early metrics; initial metrics should be simple and actionable (e.g., \u201cclaims with valid evidence\u201d).\n\n---\n\n## Milestone 5: Standards-Conforming Financial Report Generation\n\n**Goal**: Compose verified claims into a financial report generator with provenance retention.\n\n**Deliverables**:\n- `report_generator.py` \u2014 Assembles verified claims into a standards-conformant, attributed report.\n- `report_schema.py` \u2014 Defines reporting templates and structure.\n- `test_report_generation.py` \u2014 Asserts numeric agreement, provenance traceability for all figures.\n\n**Acceptance Criteria**:\n- All report values are traceable to source evidence.\n- Fails if any claim is unverified or evidence-absent.\n- Numeric totals are accurate (tested).\n\n**Risks**:\n- Loss of provenance when aggregating; mitigate with explicit ancestry tracking.\n\n---\n\n## Milestone 6: Integration and Regression Suite\n\n**Goal**: Validate end-to-end operation and regression-protect prior functionality.\n\n**Deliverables**:\n- `integration_test.py` \u2014 Full workflow test: ingest \u2192 claim \u2192 verify \u2192 evaluate \u2192 report.\n- `regression_suite.py` \u2014 Canned scenarios to catch future violations.\n- `README.md` \u2014 Run instructions, coverage badges, iteration metrics.\n\n**Acceptance Criteria**:\n- All integration and regression tests pass from clean clone.\n- Any verification or evidence model regression is caught promptly.\n\n**Risks**:\n- Tests becoming outdated; mitigate with continuous update discipline.\n\n---\n\n### Evaluation-First Mindset\n\n- Milestone 4 occurs before full report generation.\n- All wiring is explicit; \u201cmagic\u201d is avoided in repositories and gate arrangements.\n- Failure points (failed verifications, missing evidence) are surfaced as first-class, testable conditions at each stage.\n\n---\n\n**This roadmap supports rapid, measured iteration with explicit, reversible steps and maintains firm alignment with the plan\u2019s verification and evaluation mandates.**",
+    "output_len": 4827
+  },
+  "controller": {
+    "enabled": true,
+    "output": "Next Best Small Reversible Step\n\nSince Milestone 1 comes first and focuses on Claims and Evidence core primitives, and since claims.py (defining Claim/Evidence) is already present, the single next best, incremental step is to scaffold the invariant tests that will later ensure claims cannot exist without evidence.\n\nThus, the best small step is to create the initial test_claims.py, containing a minimal test that instantiates Claim with evidence and a (currently failing/empty) test asserting error when no evidence is given. This can be incrementally filled out as the Claim/Evidence classes grow stricter.\n\n**Action: Create src/praxis_core/test_claims.py (full file replacement)**\n\n```python\nimport pytest\nfrom src.praxis_core.claims import Claim, Evidence\n\ndef test_claim_can_be_created_with_evidence():\n    evidence = Evidence(\n        source=\"bank_statement.pdf\",\n        timestamp=\"2024-03-01T12:00:00Z\",\n        reference=\"TX123\"\n    )\n    claim = Claim(\n        statement=\"Company received $10,000 from client.\",\n        evidence=[evidence]\n    )\n    assert claim.evidence and claim.evidence[0].reference == \"TX123\"\n\ndef test_claim_without_evidence_raises_error():\n    # This test will initially fail until invariant is enforced in Claim\n    with pytest.raises(Exception):\n        Claim(\n            statement=\"Company received $10,000 from client.\",\n            evidence=[]\n        )\n```\n\n**Terminal Commands to Verify Progress:**\n\n```sh\npytest src/praxis_core/test_claims.py\nls src/praxis_core/\ncat src/praxis_core/test_claims.py\n```\n\nReady for your next instruction or diagnostics.",
+    "output_len": 1594
+  },
+  "claims": {
+    "count": 6,
+    "items": [
+      {
+        "id": "tb_cash_balance_r2",
+        "text": "Trial balance balance for Cash.",
+        "value": null,
+        "unit": "USD",
+        "evidence": [
+          {
+            "source_id": "trial_balance.csv",
+            "locator": "account=Cash",
+            "content_hash": "89a0d9da5dc3e8a58eda7877685ec8359197231ef1723bb73c87239f2f8c5d9f",
+            "snippet": "Cash balance=-1720463047.97",
+            "data_row": {
+              "account": "Cash",
+              "debit": "0.0",
+              "credit": "1720463047.97",
+              "balance": "-1720463047.97",
+              "balance_pct": "-0.20898799558886103"
+            }
+          }
+        ],
+        "evidence_count": 1
+      },
+      {
+        "id": "tb_expense_balance_r2",
+        "text": "Trial balance balance for Expense.",
+        "value": null,
+        "unit": "USD",
+        "evidence": [
+          {
+            "source_id": "trial_balance.csv",
+            "locator": "account=Expense",
+            "content_hash": "d6a4ff6d8fea5e869d303034dabda26f655fb463af036012fcdcf935cc31acea",
+            "snippet": "Expense balance=1720463047.97",
+            "data_row": {
+              "account": "Expense",
+              "debit": "1720463047.97",
+              "credit": "0.0",
+              "balance": "1720463047.97",
+              "balance_pct": "0.20898799558886103"
+            }
+          }
+        ],
+        "evidence_count": 1
+      },
+      {
+        "id": "tb_revenue_balance_r2",
+        "text": "Trial balance balance for Revenue.",
+        "value": null,
+        "unit": "USD",
+        "evidence": [
+          {
+            "source_id": "trial_balance.csv",
+            "locator": "account=Revenue",
+            "content_hash": "e7492dbe057774b463eddc0173885ba8ce3fb21cf3a0b974e3b29fff75fd4764",
+            "snippet": "Revenue balance=-2395713680.56",
+            "data_row": {
+              "account": "Revenue",
+              "debit": "0.0",
+              "credit": "2395713680.56",
+              "balance": "-2395713680.56",
+              "balance_pct": "-0.291012004411139"
+            }
+          }
+        ],
+        "evidence_count": 1
+      },
+      {
+        "id": "tb_accounts_receivable_balance_r2",
+        "text": "Trial balance balance for Accounts Receivable.",
+        "value": null,
+        "unit": "USD",
+        "evidence": [
+          {
+            "source_id": "trial_balance.csv",
+            "locator": "account=Accounts Receivable",
+            "content_hash": "c7625982b19f16c10c7723a9ba08483e1dd0192b100abc2775c4e05b7a52d10a",
+            "snippet": "Accounts Receivable balance=2395713680.56",
+            "data_row": {
+              "account": "Accounts Receivable",
+              "debit": "2395713680.56",
+              "credit": "0.0",
+              "balance": "2395713680.56",
+              "balance_pct": "0.291012004411139"
+            }
+          }
+        ],
+        "evidence_count": 1
+      },
+      {
+        "id": "rev_gt_exp_r2",
+        "text": "Revenue exceeds Expense on the trial balance.",
+        "value": null,
+        "unit": null,
+        "evidence": [
+          {
+            "source_id": "trial_balance.csv",
+            "locator": "account=Revenue",
+            "content_hash": "e7492dbe057774b463eddc0173885ba8ce3fb21cf3a0b974e3b29fff75fd4764",
+            "snippet": "Revenue balance=-2395713680.56",
+            "data_row": {
+              "account": "Revenue",
+              "debit": "0.0",
+              "credit": "2395713680.56",
+              "balance": "-2395713680.56",
+              "balance_pct": "-0.291012004411139"
+            }
+          },
+          {
+            "source_id": "trial_balance.csv",
+            "locator": "account=Expense",
+            "content_hash": "d6a4ff6d8fea5e869d303034dabda26f655fb463af036012fcdcf935cc31acea",
+            "snippet": "Expense balance=1720463047.97",
+            "data_row": {
+              "account": "Expense",
+              "debit": "1720463047.97",
+              "credit": "0.0",
+              "balance": "1720463047.97",
+              "balance_pct": "0.20898799558886103"
+            }
+          }
+        ],
+        "evidence_count": 2
+      },
+      {
+        "id": "profit_positive_r2",
+        "text": "The company is profitable.",
+        "value": null,
+        "unit": null,
+        "evidence": [
+          {
+            "source_id": "trial_balance.csv",
+            "locator": "account=Revenue",
+            "content_hash": "e7492dbe057774b463eddc0173885ba8ce3fb21cf3a0b974e3b29fff75fd4764",
+            "snippet": "Revenue balance=-2395713680.56",
+            "data_row": {
+              "account": "Revenue",
+              "debit": "0.0",
+              "credit": "2395713680.56",
+              "balance": "-2395713680.56",
+              "balance_pct": "-0.291012004411139"
+            }
+          },
+          {
+            "source_id": "trial_balance.csv",
+            "locator": "account=Expense",
+            "content_hash": "d6a4ff6d8fea5e869d303034dabda26f655fb463af036012fcdcf935cc31acea",
+            "snippet": "Expense balance=1720463047.97",
+            "data_row": {
+              "account": "Expense",
+              "debit": "1720463047.97",
+              "credit": "0.0",
+              "balance": "1720463047.97",
+              "balance_pct": "0.20898799558886103"
+            }
+          }
+        ],
+        "evidence_count": 2
+      }
+    ]
+  },
+  "verification": {
+    "status": "pass",
+    "checks": [
+      {
+        "claim_id": "tb_cash_balance_r2",
+        "status": "pass",
+        "reason": "Evidence present."
+      },
+      {
+        "claim_id": "tb_expense_balance_r2",
+        "status": "pass",
+        "reason": "Evidence present."
+      },
+      {
+        "claim_id": "tb_revenue_balance_r2",
+        "status": "pass",
+        "reason": "Evidence present."
+      },
+      {
+        "claim_id": "tb_accounts_receivable_balance_r2",
+        "status": "pass",
+        "reason": "Evidence present."
+      },
+      {
+        "claim_id": "rev_gt_exp_r2",
+        "status": "pass",
+        "reason": "Evidence present."
+      },
+      {
+        "claim_id": "profit_positive_r2",
+        "status": "pass",
+        "reason": "Evidence present."
+      }
+    ],
+    "summary": "evidence_coverage=1.000 (6/6), threshold=1.0"
+  },
+  "release": {
+    "decision": "proceed",
+    "reason": "All verification gates passed."
+  },
+  "extra": {
+    "run_idx": 2,
+    "runs": 3,
+    "run_agents": true,
+    "eval_metrics": {
+      "numeric_agreement": null,
+      "unsupported_claims": null,
+      "factscore": null,
+      "ragas": null
+    },
+    "eval_smoke_ok": true,
+    "agent_error": ""
+  }
+}
