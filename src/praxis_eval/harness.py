@@ -1,17 +1,5 @@
-#!/usr/bin/env python3
-"""
-Local eval harness (deterministic, no API calls).
-
-- Runs the existing Praxis pipeline (generate -> verify -> release decision)
-- Writes eval artifacts to:
-    evals/out/latest.json
-    evals/out/run_YYYYMMDD_HHMMSS.json
-- Optionally reads a very simple case file (YAML-ish or JSON) to record expectations.
-"""
-
 from __future__ import annotations
 
-import argparse
 import dataclasses
 import json
 import os
@@ -40,7 +28,6 @@ def _safe_float(x: str) -> Optional[float]:
 
 
 def _parse_bracket_list(s: str) -> list[str]:
-    # Accept: [a,b] or ["a","b"] or [a, b]
     s = s.strip()
     if s.startswith("[") and s.endswith("]"):
         inner = s[1:-1].strip()
@@ -48,7 +35,6 @@ def _parse_bracket_list(s: str) -> list[str]:
             return []
         parts = [p.strip().strip('"').strip("'") for p in inner.split(",")]
         return [p for p in parts if p]
-    # Fallback single value
     return [s.strip().strip('"').strip("'")]
 
 
@@ -64,7 +50,6 @@ def _parse_case(case_path: Optional[str]) -> Dict[str, Any]:
 
     text = p.read_text(encoding="utf-8", errors="replace")
 
-    # If JSON, parse fully.
     if p.suffix.lower() == ".json":
         try:
             obj = json.loads(text)
@@ -76,18 +61,11 @@ def _parse_case(case_path: Optional[str]) -> Dict[str, Any]:
         except Exception as e:
             return {"name": p.stem, "path": str(p), "parse_error": f"JSON parse failed: {e}"}
 
-    # Minimal YAML-ish: only top-level key: value pairs (no nesting required).
-    # Supported expectation keys:
-    #   evidence_coverage_min: 0.5
-    #   evidence_coverage_max: 1.0
-    #   verification_status_in: [needs_review, pass]
-    #   release_decision_in: [hold, release]
     for raw in text.splitlines():
         line = raw.split("#", 1)[0].rstrip()
         if not line.strip():
             continue
         if line.startswith(("  ", "\t", "-")):
-            # ignore nested/indented/list lines for now
             continue
         if ":" not in line:
             continue
@@ -135,10 +113,6 @@ def _coerce_dict(obj: Any) -> Dict[str, Any]:
 
 
 def _norm_token(x: Any) -> Optional[str]:
-    """
-    Normalize string-like and Enum(str, Enum) values for stable comparisons.
-    For Enum(str, Enum), json dumps often shows the value, but str(enum) can be 'EnumClass.member'.
-    """
     if x is None:
         return None
     if hasattr(x, "value"):
@@ -146,7 +120,6 @@ def _norm_token(x: Any) -> Optional[str]:
             return str(getattr(x, "value"))
         except Exception:
             pass
-    # If it's already a str (including Enum that is a str subclass), return the underlying text.
     try:
         return str(x)
     except Exception:
@@ -154,20 +127,17 @@ def _norm_token(x: Any) -> Optional[str]:
 
 
 def _extract_coverage(verification: Any) -> Optional[float]:
-    # Try common locations
     if isinstance(verification, dict):
         for k in ("evidence_coverage", "coverage"):
             if k in verification and isinstance(verification[k], (int, float)):
                 return float(verification[k])
 
-    # Try attributes
     for attr in ("evidence_coverage", "coverage"):
         if hasattr(verification, attr):
             v = getattr(verification, attr)
             if isinstance(v, (int, float)):
                 return float(v)
 
-    # Parse summary string if present
     summary = None
     if isinstance(verification, dict):
         summary = verification.get("summary")
@@ -182,7 +152,6 @@ def _extract_coverage(verification: Any) -> Optional[float]:
 
 
 def _extract_status_and_checks(verification: Any) -> Tuple[Optional[Any], Any, Optional[str]]:
-    # returns (status, checks, summary)
     if isinstance(verification, dict):
         status = verification.get("status") or verification.get("verification_status")
         checks = verification.get("checks")
@@ -196,7 +165,6 @@ def _extract_status_and_checks(verification: Any) -> Tuple[Optional[Any], Any, O
 
 
 def _extract_release(release_obj: Any) -> Tuple[Optional[Any], Optional[str]]:
-    # returns (decision, reason)
     if isinstance(release_obj, dict):
         return release_obj.get("decision"), release_obj.get("reason")
 
@@ -208,7 +176,6 @@ def _extract_release(release_obj: Any) -> Tuple[Optional[Any], Optional[str]]:
 def run(case_path: Optional[str]) -> Dict[str, Any]:
     case = _parse_case(case_path)
 
-    # Import the existing pipeline functions (do not change their behavior here).
     from praxis_core.generator_stub import generate_sample_claims
     from praxis_core.verification import verify_evidence_presence
     from praxis_core.release import decide_release
@@ -248,7 +215,6 @@ def run(case_path: Optional[str]) -> Dict[str, Any]:
         },
     }
 
-    # Evaluate expectations (optional)
     expectations: Dict[str, Any] = {}
     verdicts: Dict[str, Any] = {}
 
@@ -275,31 +241,6 @@ def run(case_path: Optional[str]) -> Dict[str, Any]:
         result["verdicts"] = verdicts
         result["pass"] = bool(verdicts) and all(bool(v) for v in verdicts.values())
     else:
-        result["pass"] = None  # no expectations defined
+        result["pass"] = None
 
     return result
-
-
-def main() -> int:
-    ap = argparse.ArgumentParser(description="Praxis local eval harness (writes evals/out/latest.json).")
-    ap.add_argument("--case", default=None, help="Path to case file (.yaml or .json). Optional.")
-    args = ap.parse_args()
-
-    out_dir = Path("evals") / "out"
-    out_dir.mkdir(parents=True, exist_ok=True)
-
-    payload = run(args.case)
-
-    latest_path = out_dir / "latest.json"
-    ts_path = out_dir / f"run_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.json"
-
-    latest_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    ts_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-
-    print(f"Wrote: {latest_path}")
-    print(f"Wrote: {ts_path}")
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

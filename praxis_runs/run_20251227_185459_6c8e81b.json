@@ -1,0 +1,88 @@
+{
+  "schema": "praxis.run_artifact.v1",
+  "timestamp": "20251227_185459",
+  "git_rev": "6c8e81b",
+  "run_source": "praxis_gui.py",
+  "inputs": {
+    "dataset_root": null,
+    "min_attribution_coverage": 1.0
+  },
+  "planner": {
+    "enabled": true,
+    "output": "**Verification-Aware Autonomous CFO \u2014 Implementation Roadmap**\n\n---\n\n### Milestone 1: **Claims & Evidence Core**\n\n- **Goal:**  \n  Establish core data structures and explicit connections between claims and their supporting evidence.\n\n- **Deliverables:**  \n  - `claims.py`: Class for `Claim` (with evidence links).\n  - `evidence.py`: Class for `Evidence` (with source attribution fields).\n  - `test_claims_evidence.py`: Initial unit tests covering claims/evidence relationships.\n\n- **Acceptance Criteria:**  \n  - All `Claim` objects must reference at least one `Evidence` object.\n  - Can instantiate, serialize, and inspect claims and their evidence.\n  - Tests demonstrate that claims without evidence are invalid.\n\n- **Risks:**  \n  - Insufficient evidence granularity.\n  - Overly rigid object relationships may impede later extensibility.\n\n---\n\n### Milestone 2: **Claim Generation Engine**\n\n- **Goal:**  \n  Generate claims from source records with attributed evidence.\n\n- **Deliverables:**  \n  - `claim_generator.py`: Functions to parse source records and create `Claim` objects with evidence.\n  - `source_records.csv`: Sample source records for development/testing.\n  - `test_claim_generator.py`: Tests generating claims from sample records.\n\n- **Acceptance Criteria:**  \n  - Claims generated from records always include evidence with source attributes.\n  - Generator tested against normal and edge-case inputs.\n\n- **Risks:**  \n  - Source data misparsing leading to invalid claims.\n  - Evidence-source mapping complexity.\n\n---\n\n### Milestone 3: **Verification Gates & Deterministic Checks**\n\n- **Goal:**  \n  Implement verification modules ensuring numeric integrity and standards compliance.\n\n- **Deliverables:**  \n  - `verification.py`: Functions/gates for numeric agreement checks and standards validation.\n  - `test_verification.py`: Tests for verification logic, including failure paths.\n\n- **Acceptance Criteria:**  \n  - Claims violating numeric agreement or missing requisite evidence are blocked.\n  - Verification failures are explicit and instructive.\n  - Unit tests cover key verification cases, including negative tests.\n\n- **Risks:**  \n  - False positives/negatives in verification logic.\n  - Complexity in encoding standards/compliance rules.\n\n---\n\n### Milestone 4: **Evaluation Harness: Metrics & Governance Hooks**\n\n- **Goal:**  \n  Provide measurable evaluation of claim/evidence pipeline, exposing hooks for human-in-the-loop review.\n\n- **Deliverables:**  \n  - `evaluation.py`: Functions to compute metrics (e.g., claim coverage, evidence sufficiency, verification pass rate).\n  - `metrics_report.json`: Example output of metrics calculations.\n  - `test_evaluation.py`: Tests for metrics calculations and governance notification hooks.\n\n- **Acceptance Criteria:**  \n  - System calculates and exposes metrics per batch.\n  - Governance hook (e.g., callback or log entry) available prior to claim release.\n  - Tests validate correct metric computation and governance trigger on failure.\n\n- **Risks:**  \n  - Metrics poorly reflect actual integrity (lack of actionable insight).\n  - Missing timely governance interventions.\n\n---\n\n### Milestone 5: **Auditability & Provenance Logging**\n\n- **Goal:**  \n  Log creation, verification, and evaluation steps for end-to-end auditability.\n\n- **Deliverables:**  \n  - `audit_log.py`: Logging utilities for claim/evidence events.\n  - Collated audit log (e.g., `audit_log.json`) per run.\n  - `test_audit_log.py`: Tests for durability and completeness of audit logging.\n\n- **Acceptance Criteria:**  \n  - All claim lifecycle steps (creation, verification, evaluation, release/block) are logged with strict provenance.\n  - Logs are queryable and can be matched to claims and evidence.\n  - Tests cover logging correctness and error cases.\n\n- **Risks:**  \n  - Logs grow too large to be practical.\n  - Gaps in logging lead to audit blind spots.\n\n---\n\n### Milestone 6: **Release Orchestration & Reporting**\n\n- **Goal:**  \n  Assemble verified claims into standards-compliant financial reports guarded by verification and approval gates.\n\n- **Deliverables:**  \n  - `reporting.py`: Assemble and serialize final financial reports, driven by verified claims.\n  - `release_gate.py`: Enforces verification and governance checks prior to release.\n  - `test_reporting_release.py`: Tests for generating and releasing reports only when all gates pass.\n\n- **Acceptance Criteria:**  \n  - No report is released if verification/gov gates fail.\n  - Output matches standards (e.g., summary balance, evidence links per claim).\n  - Tests cover success and all block/failure modes.\n\n- **Risks:**  \n  - Gaps in pre-release defenses could allow bad output.\n  - Report structure may not fit all standards/auditor requirements.\n\n---\n\n**Evaluation-first and Change Management Notes:**\n\n- **Evaluation harness** is implemented in Milestone 4, before full integration.\n- **Explicit wiring:** Modules reference each other by explicit import/function call, with no hidden magic or reflection.\n- **Small, reversible steps:** Each milestone can be reverted by removing added modules/files; no invasive refactoring or state changes occur between steps.\n\n---\n\n**Summary Table**\n\n| Milestone                        | Goal                            | Key Deliverables                         |\n|----------------------------------|----------------------------------|------------------------------------------|\n| Claims & Evidence Core           | Data structures linking claims/evidence | claims.py, evidence.py, unit tests   |\n| Claim Generation                 | Create claims from source records | claim_generator.py, test files         |\n| Verification Gates               | Deterministic numeric/standards checks | verification.py, tests               |\n| Evaluation Harness               | Metrics & governance notification | evaluation.py, metrics_report.json     |\n| Audit & Logging                  | Lifecycle provenance logging          | audit_log.py, audit_log.json           |\n| Release Orchestration/Reporting  | Verified financial report assembly    | reporting.py, release_gate.py, tests   |\n\n---\n\nThis roadmap aligns with the Praxis plan, prioritizing evaluation and explicit evidence, with small, auditable steps at each stage.",
+    "output_len": 6251
+  },
+  "controller": {
+    "enabled": true,
+    "output": "**Next best small, reversible implementation step:**\n\nCreate the initial Evidence dataclass in src/praxis_core/evidence.py, focusing on minimal source attribution fields and no downstream dependencies yet.\n\n---\n\n**File to add:**\n- src/praxis_core/evidence.py\n\n---\n\n**Full-file contents for src/praxis_core/evidence.py:**\n\n```python\nfrom dataclasses import dataclass\n\n@dataclass\nclass Evidence:\n    \"\"\"\n    Evidence object with minimal source attribution fields.\n    \"\"\"\n    source_id: str\n    description: str = \"\"\n```\n\n---\n\n**Verification commands:**\n```bash\nls src/praxis_core/evidence.py\nhead -10 src/praxis_core/evidence.py\n```\n\n*(No test or integration needed yet; this is strictly establishing the new data structure for subsequent steps.)*",
+    "output_len": 746
+  },
+  "claims": {
+    "count": 2,
+    "items": [
+      {
+        "id": "rev_total",
+        "text": "Total revenue reported in the trial balance.",
+        "value": null,
+        "unit": "USD",
+        "evidence": [
+          {
+            "source_id": "trial_balance.csv",
+            "locator": "account=Revenue",
+            "content_hash": "e7492dbe057774b463eddc0173885ba8ce3fb21cf3a0b974e3b29fff75fd4764",
+            "snippet": "Revenue balance=-2395713680.56",
+            "data_row": {
+              "account": "Revenue",
+              "debit": "0.0",
+              "credit": "2395713680.56",
+              "balance": "-2395713680.56",
+              "balance_pct": "-0.291012004411139"
+            }
+          }
+        ],
+        "evidence_count": 1
+      },
+      {
+        "id": "profit_positive",
+        "text": "The company is profitable.",
+        "value": null,
+        "unit": null,
+        "evidence": [],
+        "evidence_count": 0
+      }
+    ]
+  },
+  "verification": {
+    "status": "needs_review",
+    "checks": [
+      {
+        "claim_id": "rev_total",
+        "status": "pass",
+        "reason": "Evidence present."
+      },
+      {
+        "claim_id": "profit_positive",
+        "status": "fail",
+        "reason": "Missing evidence."
+      }
+    ],
+    "summary": "evidence_coverage=0.500 (1/2), threshold=1.0"
+  },
+  "release": {
+    "decision": "hold",
+    "reason": "Verification incomplete; human review or additional evidence required."
+  },
+  "extra": {
+    "run_idx": 1,
+    "runs": 3,
+    "run_agents": true,
+    "eval_metrics": {
+      "numeric_agreement": null,
+      "unsupported_claims": null,
+      "factscore": null,
+      "ragas": null
+    },
+    "eval_smoke_ok": true,
+    "agent_error": ""
+  }
+}

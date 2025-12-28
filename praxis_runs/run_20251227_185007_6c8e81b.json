@@ -1,0 +1,88 @@
+{
+  "schema": "praxis.run_artifact.v1",
+  "timestamp": "20251227_185007",
+  "git_rev": "6c8e81b",
+  "run_source": "praxis_gui.py",
+  "inputs": {
+    "dataset_root": null,
+    "min_attribution_coverage": 1.0
+  },
+  "planner": {
+    "enabled": true,
+    "output": "## Roadmap: Verification-Aware Autonomous CFO\n\n---\n\n### **Milestone 1: Claims & Evidence Core Schema**\n\n**Goal:**  \nEstablish explicit, structured representation of financial claims and their attributed evidence.\n\n**Deliverables:**  \n- `claims.py` \u2014 Claim and Evidence class definitions.\n- `schemas/claim_schema.json` \u2014 JSON schema for claims with evidence linkage.\n- `tests/test_claims.py` \u2014 Unit tests for claim and evidence creation and serialization.\n\n**Acceptance Criteria:**  \n- A Claim object cannot be instantiated or serialized without linked Evidence.\n- Evidence objects capture sufficient metadata to support audit trails.\n- Loading/saving claims to/from JSON passes schema validation.\n\n**Risks & Mitigations:**  \n- *Risk:* Overly complex schemas.  \n  *Mitigation:* Start minimal, add fields as dictated by concrete use cases.\n\n---\n\n### **Milestone 2: Deterministic Verification Engine**\n\n**Goal:**  \nImplement verification logic to check that all claims have evidence and that numeric claims match supplied records.\n\n**Deliverables:**  \n- `verification.py` \u2014 Functions/classes to verify claim validity and numeric agreement.\n- `tests/test_verification.py` \u2014 Unit tests for verification routines using sample claims/evidence.\n\n**Acceptance Criteria:**  \n- Verification engine blocks claims without evidence.\n- Claims with mismatched numbers to source evidence are flagged.\n- All logic is deterministic and reproducible.\n\n**Risks & Mitigations:**  \n- *Risk:* Source record variety.  \n  *Mitigation:* Limit source formats for this iteration (e.g., only CSV).\n\n---\n\n### **Milestone 3: Evaluation Harness**\n\n**Goal:**  \nDevelop an automated evaluation system to measure factual accuracy, numeric agreement, and auditability.\n\n**Deliverables:**  \n- `evaluation_harness.py` \u2014 Scripts to:\n  - Ingest sample reports and source records\n  - Run through claim extraction and verification\n  - Output metrics (accuracy, evidence coverage, numeric agreement)\n- `sample_data/` \u2014 Example source records and generated reports.\n- `tests/test_evaluation.py` \u2014 Unit tests for the harness.\n\n**Acceptance Criteria:**  \n- Measurable reports on position: accuracy %, evidence coverage %, numeric agreement %.\n- Harness can be run on sample data and reports standard metrics.\n\n**Risks & Mitigations:**  \n- *Risk:* Incomplete metric definitions.  \n  *Mitigation:* Align first with numeric agreement and evidence coverage; refine further.\n\n---\n\n### **Milestone 4: Human-in-the-Loop Governance Module**\n\n**Goal:**  \nAllow manual review/input for claims that fail verification, and for auditing purpose.\n\n**Deliverables:**  \n- `governance.py` \u2014 Functions/interfaces for reviewing and approving/rejecting blocked claims.\n- `tests/test_governance.py` \u2014 Simulated human review tests.\n\n**Acceptance Criteria:**  \n- Claims failing verification can be reviewed/corrected or marked as rejected.\n- All manual actions and rationales are logged for auditability.\n\n**Risks & Mitigations:**  \n- *Risk:* Usability issues in review process.  \n  *Mitigation:* CLI or simple TUI for first iteration.\n\n---\n\n### **Milestone 5: Report Generation and Release Gate**\n\n**Goal:**  \nGenerate standards-compliant financial reports using only verified claims, enforcing the release gate.\n\n**Deliverables:**  \n- `report_generator.py` \u2014 Functions to assemble compliant reports strictly from verified claims.\n- `release_gate.py` \u2014 Enforces no release on failed verification.\n- `tests/test_report_release.py` \u2014 Tests ensuring only verified data is included; release blocks on failure.\n\n**Acceptance Criteria:**  \n- Produced reports contain only claims that have cleared all verification and governance checks.\n- Release is blocked if any verification fails; passes if all checks succeed.\n\n**Risks & Mitigations:**  \n- *Risk:* Edge cases with partially verified data.  \n  *Mitigation:* Log and report partial progress but never release partial data.\n\n---\n\n### **Milestone 6: Metrics Collection and Iteration Support**\n\n**Goal:**  \nAggregate and display key metrics from the evaluation harness to drive further system improvement.\n\n**Deliverables:**  \n- `metrics.py` \u2014 Collects and reports statistics on factual accuracy, claim coverage, and evidence lineage.\n- `tests/test_metrics.py` \u2014 Validates metric collection and reporting.\n\n**Acceptance Criteria:**  \n- Metrics are consistently reported after each evaluation run.\n- Developers can trace metrics back to specific claims and assertions.\n\n**Risks & Mitigations:**  \n- *Risk:* Metrics hard to interpret or act upon.  \n  *Mitigation:* Provide basic visualizations (e.g., tables, charts), keeping data provenance explicit.\n\n---\n\n**Summary**  \nThis roadmap establishes the explicit, reversible wiring for claim/evidence handling, deterministic verification, and release gating, with built-in evaluation and human governance. Each milestone is narrowly scoped for practical, test-driven progress, facilitating frequent feedback and controlled evolution.",
+    "output_len": 4953
+  },
+  "controller": {
+    "enabled": true,
+    "output": "Next Best Small, Reversible Step\n\nSince we are at Milestone 1 and must work only in src/praxis_core/, let's start by creating skeleton dataclasses for Claim and Evidence, which will be extended later. This is a prerequisite for the rest of the schema logic.\n\nAction:\n- Implement minimal Evidence and Claim dataclasses in src/praxis_core/claims.py (create this file if not exists). For maximal reversibility, fields will be minimal, with evidence linkage required in the Claim constructor, but without strict enforcement or serialization methods yet.\n\nFile: src/praxis_core/claims.py  \n(Full-file content:)\n\n```python\nfrom dataclasses import dataclass\nfrom typing import Any, List\n\n@dataclass\nclass Evidence:\n    source: str\n    description: str\n\n@dataclass\nclass Claim:\n    statement: str\n    evidence: List[Evidence]\n```\n\nVerification Commands:\n\n```sh\nls src/praxis_core/claims.py\nhead -20 src/praxis_core/claims.py\npython3 -c \"from src.praxis_core.claims import Claim, Evidence; print(Claim(statement='Total sales: $500', evidence=[Evidence(source='invoice.csv', description='Invoice for Q1 sales')]))\"\n```\nIf you would like to see stricter linkage, validation, or schema/serialization, request the next step!",
+    "output_len": 1211
+  },
+  "claims": {
+    "count": 2,
+    "items": [
+      {
+        "id": "rev_total",
+        "text": "Total revenue reported in the trial balance.",
+        "value": null,
+        "unit": "USD",
+        "evidence": [
+          {
+            "source_id": "trial_balance.csv",
+            "locator": "account=Revenue",
+            "content_hash": "e7492dbe057774b463eddc0173885ba8ce3fb21cf3a0b974e3b29fff75fd4764",
+            "snippet": "Revenue balance=-2395713680.56",
+            "data_row": {
+              "account": "Revenue",
+              "debit": "0.0",
+              "credit": "2395713680.56",
+              "balance": "-2395713680.56",
+              "balance_pct": "-0.291012004411139"
+            }
+          }
+        ],
+        "evidence_count": 1
+      },
+      {
+        "id": "profit_positive",
+        "text": "The company is profitable.",
+        "value": null,
+        "unit": null,
+        "evidence": [],
+        "evidence_count": 0
+      }
+    ]
+  },
+  "verification": {
+    "status": "needs_review",
+    "checks": [
+      {
+        "claim_id": "rev_total",
+        "status": "pass",
+        "reason": "Evidence present."
+      },
+      {
+        "claim_id": "profit_positive",
+        "status": "fail",
+        "reason": "Missing evidence."
+      }
+    ],
+    "summary": "evidence_coverage=0.500 (1/2), threshold=1.0"
+  },
+  "release": {
+    "decision": "hold",
+    "reason": "Verification incomplete; human review or additional evidence required."
+  },
+  "extra": {
+    "run_idx": 1,
+    "runs": 1,
+    "run_agents": true,
+    "eval_metrics": {
+      "numeric_agreement": null,
+      "unsupported_claims": null,
+      "factscore": null,
+      "ragas": null
+    },
+    "eval_smoke_ok": true,
+    "agent_error": ""
+  }
+}

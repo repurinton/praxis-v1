@@ -31,3 +31,6 @@ dist/
 
 # Local eval outputs
 /evals/out/
+*.bak
+*.jsonl
+praxis_evals/out/

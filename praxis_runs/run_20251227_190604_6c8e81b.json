@@ -1,0 +1,209 @@
+{
+  "schema": "praxis.run_artifact.v1",
+  "timestamp": "20251227_190604",
+  "git_rev": "6c8e81b",
+  "run_source": "praxis_gui.py",
+  "inputs": {
+    "dataset_root": null,
+    "min_attribution_coverage": 1.0
+  },
+  "planner": {
+    "enabled": true,
+    "output": "Certainly. Here is a practical, repo-executable implementation roadmap for the Verification-Aware Autonomous CFO system, constructed per your requirements and Praxis context.\n\n---\n\n# Implementation Roadmap: Verification-Aware Autonomous CFO\n\n---\n\n## Milestone 1: Define Core Data Structures and Contracts\n\n**Goal:**  \nEstablish unambiguous, explicit representations for claims and evidence, and ensure all code downstream can depend on these structures.\n\n**Deliverables:**  \n- `claims.py`: Claim and Evidence dataclasses/types, with serialization/deserialization methods.\n- `contracts.py`: Contracts/interfaces for claim creation, evidence attribution, and verification gate APIs.\n- A simple README explaining the interface.\n\n**Acceptance Criteria:**  \n- All claims and evidence can be instantiated, validated, and serialized.\n- Coverage: unit tests for claim/evidence round-tripping in `tests/test_claims.py`.\n- Contracts exported with docstrings listing invariants and non-negotiables.\n\n**Risks:**  \n- Over-engineering before seeing data.  \n- Designs may need refactoring when use-cases clarified.\n\n---\n\n## Milestone 2: Evidence Attribution & Claim Construction Pipeline\n\n**Goal:**  \nEnsure that every claim constructed must carry explicit, auditable evidence. Block claim creation without evidence.\n\n**Deliverables:**  \n- `claim_builder.py`: Mechanism for constructing claims only with linked evidence.\n- `errors.py`: Custom exceptions for missing/inadequate evidence.\n- Tests in `tests/test_claim_builder.py` covering positive and negative creation flows.\n\n**Acceptance Criteria:**  \n- All claim construction fails if evidence is missing or invalid.\n- Negative test: cannot instantiate a claim without valid evidence.\n- Claims reject unknown evidence types or malformed data.\n\n**Risks:**  \n- Pipeline may be brittle to evolving evidence types/formats.\n\n---\n\n## Milestone 3: Baseline Evaluation Harness\n\n**Goal:**  \nIntroduce a test harness that checks the integrity of the claim/evidence pipeline and supports future evaluation and metrics.\n\n**Deliverables:**  \n- `evaluation.py`: EvaluationRunner class with hooks for metric registration and outputs.\n- `metrics.py`: Prototypes for at least two early metrics (e.g. evidence completeness, claim/evidence serialization round-trip).\n- CLI entry point in `run_evaluation.py` for triggering evaluation runs.\n- Example fixture in `fixtures/sample_claims.json`.\n- Test in `tests/test_evaluation.py`.\n\n**Acceptance Criteria:**  \n- CLI runs, loads fixture claims, computes metrics, and outputs results.\n- Failing an integrity check results in a non-zero exit code.\n- Easily extensible to add more metrics later.\n\n**Risks:**  \n- Unclear boundaries for evaluation responsibilities may bloat the harness.\n\n---\n\n## Milestone 4: Deterministic Verification Gates\n\n**Goal:**  \nImplement the core verification gates so that every claim is deterministically checked for factual and numeric integrity before being approved for release.\n\n**Deliverables:**  \n- `verification.py`: Gate implementations (e.g., EvidenceAttributionGate, NumericAgreementGate).\n- `gates_config.yaml`: Config to enable/disable particular gates for testing.\n- Hook into evaluation harness with automated verification.\n- Tests in `tests/test_verification.py` for passing and failing cases.\n\n**Acceptance Criteria:**  \n- Claims are checked against all configured gates.\n- Verification failures block claims; details logged and surfaced in evaluation.\n- Coverage: All verification logic is exercised by tests.\n\n**Risks:**  \n- Overly rigid gates could block legitimate claims; need sensible initial policies.\n\n---\n\n## Milestone 5: Governance & Human-in-the-Loop Overrides\n\n**Goal:**  \nAdd support for human governance: allow flagged claims to be reviewed, annotated, and either approved or rejected by designated users.\n\n**Deliverables:**  \n- `governance.py`: Interfaces and stubs for human review actions.\n- `review_queue.json`: Persistent store for claims pending review.\n- Simple CLI tool `review_claims.py` to process flagged claims interactively.\n- Tests in `tests/test_governance.py`.\n\n**Acceptance Criteria:**  \n- Claims that fail verification or are ambiguous end up in review queue.\n- Human operator can annotate and approve/reject claims via CLI.\n- Review decisions are recorded and auditable.\n\n**Risks:**  \n- UI/CLI interaction may need reworking as complexity grows.\n- Potential bottlenecks due to excessive reviews.\n\n---\n\n## Milestone 6: Integration, Metrics, and Reporting\n\n**Goal:**  \nProvide end-to-end reporting, metric summary, and facilitate iteration based on real evaluation outcomes.\n\n**Deliverables:**  \n- `reporting.py`: Generates metrics and claim status reports after an evaluation run.\n- `metrics_history.json`: Running log of key metrics/results per run.\n- Documented scripts in `docs/iteration_guide.md` for how to interpret and act on metrics.\n- Automated test in `tests/test_reporting.py`.\n\n**Acceptance Criteria:**  \n- After each evaluation, a report file is generated showing pass/fail breakdown, metric trends, and flagged claims.\n- Easy rollback of claims/releases that fail verification post-run.\n- All steps/codes covered by tests.\n\n**Risks:**  \n- Metrics interpreted without enough context could lead to spurious optimization.\n\n---\n\n### Roadmap Recap\n\n1. **Core Data Structures and Contracts** (`claims.py`, `contracts.py`, `tests/`)\n2. **Evidence Attribution & Claim Construction** (`claim_builder.py`, `errors.py`, `tests/`)\n3. **Evaluation Harness** (`evaluation.py`, `metrics.py`, `run_evaluation.py`, `fixtures/`, `tests/`)\n4. **Deterministic Verification Gates** (`verification.py`, `gates_config.yaml`, `tests/`)\n5. **Governance & Human-in-the-Loop** (`governance.py`, `review_queue.json`, `review_claims.py`, `tests/`)\n6. **Integration, Metrics, Reporting** (`reporting.py`, `metrics_history.json`, `docs/`, `tests/`)\n\nEach milestone is small, explicit, reversible, and driven by measurable evaluation from the earliest stage.",
+    "output_len": 5978
+  },
+  "controller": {
+    "enabled": true,
+    "output": "The next best small, reversible implementation step, per the roadmap, is to define interface \"contracts\" in a new file for claim creation, evidence attribution, and verification gate APIs.\n\n**Action:**  \nCreate a new `src/praxis_core/contracts.py` defining (with rich docstrings per roadmap) abstract base classes (ABCs) for:\n\n- ClaimCreator\n- EvidenceAttributor\n- VerificationGate\n\nwith only method signatures and docstrings listing invariants & non-negotiables. This is non-invasive and easily reverted.\n\n---\n\n**Create file:**  \n`src/praxis_core/contracts.py`\n\n**Full contents:**\n\n```python\nfrom abc import ABC, abstractmethod\nfrom typing import Any\nfrom .claims import Claim, Evidence\n\nclass ClaimCreator(ABC):\n    \"\"\"\n    Contract: All ClaimCreators must ensure no claim is created without valid, attributed evidence.\n    Invariants:\n    - Every created Claim links one or more Evidence in a verifiable manner.\n    - Claims must be serializable.\n    - Downstream consumers must be able to inspect claim-evidence linkage.\n\n    Non-negotiables:\n    - Input evidence must pass structural validation before claim creation.\n    - Must raise on attempt to create claim with missing/invalid evidence.\n    \"\"\"\n\n    @abstractmethod\n    def create_claim(self, data: Any, evidence: Evidence) -> Claim:\n        \"\"\"\n        Construct a Claim from provided data and Evidence.\n        Raises if evidence is invalid or missing.\n        \"\"\"\n        pass\n\nclass EvidenceAttributor(ABC):\n    \"\"\"\n    Contract: EvidenceAttributors assign provenance/metadata to evidence objects.\n    Invariants:\n    - Attribution is explicit and included in serialized output.\n    - Supports round-trip (serialize/deserialize) with no loss of attribution.\n    - Attributed evidence must be audit-ready.\n\n    Non-negotiables:\n    - Must not silently drop or overwrite provided attribution.\n    - Must fail closed if attribution incomplete.\n    \"\"\"\n\n    @abstractmethod\n    def attribute(self, evidence: Evidence, source: str) -> Evidence:\n        \"\"\"\n        Attach provenance/source metadata to an Evidence object.\n        Raises if attribution fails or is incomplete.\n        \"\"\"\n        pass\n\nclass VerificationGate(ABC):\n    \"\"\"\n    Contract: VerificationGates decide if a Claim passes a particular verification criterion.\n    Invariants:\n    - Deterministic: Same claim and evidence always yield same result.\n    - Transparent: Reason for pass/fail must be inspectable.\n\n    Non-negotiables:\n    - Gate must not mutate input Claim or Evidence.\n    - Must raise or signal clearly on ambiguous or incomplete input.\n    \"\"\"\n\n    @abstractmethod\n    def check(self, claim: Claim) -> bool:\n        \"\"\"\n        Returns True if Claim passes the verification gate, else False.\n        May raise on malformed input.\n        \"\"\"\n        pass\n```\n\n---\n\n**Verify progress:**  \n1. Confirm file exists and imports cleanly:\n\n```sh\npython -c \"from src.praxis_core import contracts; print('OK')\"\n```\n2. List contract classes and method signatures:\n\n```sh\npython -c \"import inspect; import src.praxis_core.contracts as c; print([cls for cls in [c.ClaimCreator, c.EvidenceAttributor, c.VerificationGate]])\"\n```\n\nNo downstream breakage can occur, as these are ABC/contract definitions only.\n\n---\n\n*Ready for your review or next step.",
+    "output_len": 3284
+  },
+  "claims": {
+    "count": 6,
+    "items": [
+      {
+        "id": "tb_revenue_balance_r1",
+        "text": "Trial balance balance for Revenue.",
+        "value": null,
+        "unit": "USD",
+        "evidence": [
+          {
+            "source_id": "trial_balance.csv",
+            "locator": "account=Revenue",
+            "content_hash": "e7492dbe057774b463eddc0173885ba8ce3fb21cf3a0b974e3b29fff75fd4764",
+            "snippet": "Revenue balance=-2395713680.56",
+            "data_row": {
+              "account": "Revenue",
+              "debit": "0.0",
+              "credit": "2395713680.56",
+              "balance": "-2395713680.56",
+              "balance_pct": "-0.291012004411139"
+            }
+          }
+        ],
+        "evidence_count": 1
+      },
+      {
+        "id": "tb_accounts_receivable_balance_r1",
+        "text": "Trial balance balance for Accounts Receivable.",
+        "value": null,
+        "unit": "USD",
+        "evidence": [
+          {
+            "source_id": "trial_balance.csv",
+            "locator": "account=Accounts Receivable",
+            "content_hash": "c7625982b19f16c10c7723a9ba08483e1dd0192b100abc2775c4e05b7a52d10a",
+            "snippet": "Accounts Receivable balance=2395713680.56",
+            "data_row": {
+              "account": "Accounts Receivable",
+              "debit": "2395713680.56",
+              "credit": "0.0",
+              "balance": "2395713680.56",
+              "balance_pct": "0.291012004411139"
+            }
+          }
+        ],
+        "evidence_count": 1
+      },
+      {
+        "id": "tb_expense_balance_r1",
+        "text": "Trial balance balance for Expense.",
+        "value": null,
+        "unit": "USD",
+        "evidence": [
+          {
+            "source_id": "trial_balance.csv",
+            "locator": "account=Expense",
+            "content_hash": "d6a4ff6d8fea5e869d303034dabda26f655fb463af036012fcdcf935cc31acea",
+            "snippet": "Expense balance=1720463047.97",
+            "data_row": {
+              "account": "Expense",
+              "debit": "1720463047.97",
+              "credit": "0.0",
+              "balance": "1720463047.97",
+              "balance_pct": "0.20898799558886103"
+            }
+          }
+        ],
+        "evidence_count": 1
+      },
+      {
+        "id": "tb_cash_balance_r1",
+        "text": "Trial balance balance for Cash.",
+        "value": null,
+        "unit": "USD",
+        "evidence": [
+          {
+            "source_id": "trial_balance.csv",
+            "locator": "account=Cash",
+            "content_hash": "89a0d9da5dc3e8a58eda7877685ec8359197231ef1723bb73c87239f2f8c5d9f",
+            "snippet": "Cash balance=-1720463047.97",
+            "data_row": {
+              "account": "Cash",
+              "debit": "0.0",
+              "credit": "1720463047.97",
+              "balance": "-1720463047.97",
+              "balance_pct": "-0.20898799558886103"
+            }
+          }
+        ],
+        "evidence_count": 1
+      },
+      {
+        "id": "rev_gt_exp_r1",
+        "text": "Revenue exceeds Expense on the trial balance.",
+        "value": null,
+        "unit": null,
+        "evidence": [
+          {
+            "source_id": "trial_balance.csv",
+            "locator": "account=Revenue",
+            "content_hash": "e7492dbe057774b463eddc0173885ba8ce3fb21cf3a0b974e3b29fff75fd4764",
+            "snippet": "Revenue balance=-2395713680.56",
+            "data_row": {
+              "account": "Revenue",
+              "debit": "0.0",
+              "credit": "2395713680.56",
+              "balance": "-2395713680.56",
+              "balance_pct": "-0.291012004411139"
+            }
+          },
+          {
+            "source_id": "trial_balance.csv",
+            "locator": "account=Expense",
+            "content_hash": "d6a4ff6d8fea5e869d303034dabda26f655fb463af036012fcdcf935cc31acea",
+            "snippet": "Expense balance=1720463047.97",
+            "data_row": {
+              "account": "Expense",
+              "debit": "1720463047.97",
+              "credit": "0.0",
+              "balance": "1720463047.97",
+              "balance_pct": "0.20898799558886103"
+            }
+          }
+        ],
+        "evidence_count": 2
+      },
+      {
+        "id": "profit_positive_r1",
+        "text": "The company is profitable.",
+        "value": null,
+        "unit": null,
+        "evidence": [],
+        "evidence_count": 0
+      }
+    ]
+  },
+  "verification": {
+    "status": "needs_review",
+    "checks": [
+      {
+        "claim_id": "tb_revenue_balance_r1",
+        "status": "pass",
+        "reason": "Evidence present."
+      },
+      {
+        "claim_id": "tb_accounts_receivable_balance_r1",
+        "status": "pass",
+        "reason": "Evidence present."
+      },
+      {
+        "claim_id": "tb_expense_balance_r1",
+        "status": "pass",
+        "reason": "Evidence present."
+      },
+      {
+        "claim_id": "tb_cash_balance_r1",
+        "status": "pass",
+        "reason": "Evidence present."
+      },
+      {
+        "claim_id": "rev_gt_exp_r1",
+        "status": "pass",
+        "reason": "Evidence present."
+      },
+      {
+        "claim_id": "profit_positive_r1",
+        "status": "fail",
+        "reason": "Missing evidence."
+      }
+    ],
+    "summary": "evidence_coverage=0.833 (5/6), threshold=1.0"
+  },
+  "release": {
+    "decision": "hold",
+    "reason": "Verification incomplete; human review or additional evidence required."
+  },
+  "extra": {
+    "run_idx": 1,
+    "runs": 3,
+    "run_agents": true,
+    "eval_metrics": {
+      "numeric_agreement": null,
+      "unsupported_claims": null,
+      "factscore": null,
+      "ragas": null
+    },
+    "eval_smoke_ok": true,
+    "agent_error": ""
+  }
+}

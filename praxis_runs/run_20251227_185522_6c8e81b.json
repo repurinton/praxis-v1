@@ -1,0 +1,88 @@
+{
+  "schema": "praxis.run_artifact.v1",
+  "timestamp": "20251227_185522",
+  "git_rev": "6c8e81b",
+  "run_source": "praxis_gui.py",
+  "inputs": {
+    "dataset_root": null,
+    "min_attribution_coverage": 1.0
+  },
+  "planner": {
+    "enabled": true,
+    "output": "Here\u2019s a practical implementation roadmap for the Verification-Aware Autonomous CFO system, structured to quickly deliver evaluation hooks and maintain explicit, reversible changes.\n\n---\n\n### **Milestone 1: Claims and Evidence Backbone**\n\n**Goal:**  \nDefine and persist the core data structures and simple persistence for \u201cclaims\u201d and their attributed evidence.\n\n**Deliverables:**  \n- `claims.py`: Defines `Claim` and `Evidence` classes (including linkage).\n- `repository.py`: Simple in-memory repository for storing and querying claims/evidence.\n- `README.md`: Outline data model and usage examples.\n\n**Acceptance Criteria:**  \n- Can create `Claim` objects with attributed `Evidence`.\n- Can add, retrieve, and list claims and evidence from the repository.\n- All claims enforce non-null evidence at time of creation.\n\n**Risks:**  \n- Overdesign of data model before actual usage emerges.\n- Ambiguity about what constitutes evidence\u2014must be explicit.\n\n---\n\n### **Milestone 2: Explicit Claim Construction APIs**\n\n**Goal:**  \nBuild programmatic interfaces for ingestion and creation of claims, making claim-evidence linkage mandatory.\n\n**Deliverables:**  \n- `api.py`: Functions for claim submission and evidence attribution.\n- `tests/test_api.py`: Unit tests enforcing \"no claim without evidence\".\n\n**Acceptance Criteria:**  \n- APIs reject any claim lacking evidence.\n- Tests validate evidence is always attributed on claim creation.\n\n**Risks:**  \n- API surface may end up too constraining, impeding future extensions.\n\n---\n\n### **Milestone 3: Deterministic Verification Gates**\n\n**Goal:**  \nImplement verification routines that enforce standards for numeric and factual integrity, halting further processing on failure.\n\n**Deliverables:**  \n- `verification.py`: Contains `verify_numeric_agreement` and `verify_evidence_consistency` functions.\n- `tests/test_verification.py`: Tests for verification logic and blocking behavior.\n\n**Acceptance Criteria:**  \n- Verification routines block/flag claims failing integrity checks.\n- All verification failures explicitly logged/reported.\n\n**Risks:**  \n- False positives/negatives in verification may block valid claims; ensure gates are configurable.\n\n---\n\n### **Milestone 4: Evaluation Harness**\n\n**Goal:**  \nEnable routine, automated measurement of system correctness and weaknesses.\n\n**Deliverables:**  \n- `evaluation.py`: Harness to pipeline claims through verification and generate metrics (accuracy, error types, coverage).\n- `sample_data/`: Example claim/evidence datasets for testing.\n- `tests/test_evaluation.py`: Validates evaluation output.\n\n**Acceptance Criteria:**  \n- Evaluations can be run as a single script entry point.\n- Output includes per-claim pass/fail, summary metrics.\n\n**Risks:**  \n- Lack of real data limits meaningful evaluation at this stage.\n\n---\n\n### **Milestone 5: Governance Layer (Human-in-the-Loop)**\n\n**Goal:**  \nAdd a manual approval step for claims failing automatic verification.\n\n**Deliverables:**  \n- `governance.py`: Functions/UI stubs for manual review and override of claims.\n- `tests/test_governance.py`: Validate block/release logic.\n\n**Acceptance Criteria:**  \n- Failing claims can be queued for manual review.\n- Only reviewed/approved claims proceed past verification gate.\n\n**Risks:**  \n- Process bottlenecks due to manual intervention.\n\n---\n\n### **Milestone 6: Metric-Driven Iteration and Reporting**\n\n**Goal:**  \nSystematically collect, persist, and expose metrics driving improvements.\n\n**Deliverables:**  \n- `metrics.py`: Gathers stats on verification passes/fails, turnaround time, override rates.\n- `reporting.py`: Generates periodic summary reports.\n- Documentation on metric definitions and format.\n\n**Acceptance Criteria:**  \n- Metrics are collected on each pipeline run.\n- Reports summarize performance and highlight weak spots.\n\n**Risks:**  \n- Metric overload or lack of actionable insight; iterate on what\u2019s tracked.\n\n---\n\n### **Milestone 7: Standards-Conforming Report Generation**\n\n**Goal:**  \nAutomate the production of financial reports, with each claim bound to evidence and passing verification.\n\n**Deliverables:**  \n- `report_generator.py`: Transforms validated claims into report documents.\n- `schemas/`: Directory with report format definitions (e.g., XBRL, CSV).\n- `tests/test_report_generator.py`: Ensure only verified claims/evidence appear in output.\n\n**Acceptance Criteria:**  \n- Generated reports always pass verification.\n- All included claims trace to explicit evidence.\n\n**Risks:**  \n- Standard schema drift or overlooked compliance nuances.\n\n---\n\n## Evaluation-First Summary\n\n- **Evaluation harness is present by Milestone 4.**\n- Each milestone has tests/checks to maintain reversibility and explicit data movement.\n- Initial data structures/APIs are minimal, with explicit, testable wiring before \u201cmagic\u201d abstractions or automation.\n\n---\n\n**Next Step:**  \nCreate `claims.py` and `repository.py` per Milestone 1, and write a smoke test to bootstrap the modeling.",
+    "output_len": 4979
+  },
+  "controller": {
+    "enabled": true,
+    "output": "The next best, small, reversible step is:\n\nCreate src/praxis_core/repository.py with a minimal in-memory repository that can:\n- Store and retrieve Claim and Evidence objects (imported from src/praxis_core/claims.py).\n- Offer basic add, get, and list methods for claims and evidence.\n- Use only in-memory storage (simple Python data structures).\n- Include docstrings and a placeholder if claims.py isn\u2019t fully ready.\n\n**File to add:**  \nsrc/praxis_core/repository.py  \n(Full file contents below.)\n\n```python\n\"\"\"\nIn-memory repository for storing and retrieving claims and their evidence.\n\nDependencies:\n- Claim, Evidence data structures (imported from src.praxis_core.claims)\n\nNOTE: This is a first scaffold; the implementation is deliberately simple and reversible.\n\"\"\"\n\nfrom typing import List, Dict, Optional\ntry:\n    # Import canonical dataclasses\n    from .claims import Claim, Evidence\nexcept ImportError:\n    # Placeholder stubs to enable independent testing of the repo skeleton\n    from dataclasses import dataclass\n    @dataclass\n    class Evidence:\n        id: str\n        content: str\n    @dataclass\n    class Claim:\n        id: str\n        statement: str\n        evidence: Evidence\n\nclass ClaimRepository:\n    \"\"\"\n    Simple in-memory repository for Claim and Evidence objects.\n    Not thread-safe or persistent.\n    \"\"\"\n\n    def __init__(self) -> None:\n        self._claims: Dict[str, Claim] = {}\n        self._evidence: Dict[str, Evidence] = {}\n\n    def add_evidence(self, evidence: Evidence) -> None:\n        \"\"\"Add new evidence object (overwrites if id exists).\"\"\"\n        self._evidence[evidence.id] = evidence\n\n    def get_evidence(self, evidence_id: str) -> Optional[Evidence]:\n        \"\"\"Retrieve evidence by id, or None if not found.\"\"\"\n        return self._evidence.get(evidence_id)\n\n    def list_evidence(self) -> List[Evidence]:\n        \"\"\"List all evidence objects.\"\"\"\n        return list(self._evidence.values())\n\n    def add_claim(self, claim: Claim) -> None:\n        \"\"\"Add a claim (and, if needed, add its evidence).\"\"\"\n        if not isinstance(claim.evidence, Evidence):\n            raise ValueError(\"Claim must be linked to an Evidence instance\")\n        if claim.evidence.id not in self._evidence:\n            self.add_evidence(claim.evidence)\n        self._claims[claim.id] = claim\n\n    def get_claim(self, claim_id: str) -> Optional[Claim]:\n        \"\"\"Get claim by id, or None if not found.\"\"\"\n        return self._claims.get(claim_id)\n\n    def list_claims(self) -> List[Claim]:\n        \"\"\"List all claims.\"\"\"\n        return list(self._claims.values())\n```\n\n---\n\n**Terminal commands to verify progress:**\n\n1. List the new file to confirm presence:\n   ```sh\n   ls src/praxis_core/repository.py\n   ```\n2. Run a syntax check on the file:\n   ```sh\n   python -m py_compile src/praxis_core/repository.py\n   ```\n3. (Optional) Inspect public methods defined:\n   ```sh\n   grep 'def ' src/praxis_core/repository.py\n   ```\n\n---\n\nNo changes outside src/praxis_core; this is small and easily reversible.  \nIf you don\u2019t have claims.py yet: run the above, then proceed to implement the Claim and Evidence dataclasses in claims.py.",
+    "output_len": 3149
+  },
+  "claims": {
+    "count": 2,
+    "items": [
+      {
+        "id": "rev_total",
+        "text": "Total revenue reported in the trial balance.",
+        "value": null,
+        "unit": "USD",
+        "evidence": [
+          {
+            "source_id": "trial_balance.csv",
+            "locator": "account=Revenue",
+            "content_hash": "e7492dbe057774b463eddc0173885ba8ce3fb21cf3a0b974e3b29fff75fd4764",
+            "snippet": "Revenue balance=-2395713680.56",
+            "data_row": {
+              "account": "Revenue",
+              "debit": "0.0",
+              "credit": "2395713680.56",
+              "balance": "-2395713680.56",
+              "balance_pct": "-0.291012004411139"
+            }
+          }
+        ],
+        "evidence_count": 1
+      },
+      {
+        "id": "profit_positive",
+        "text": "The company is profitable.",
+        "value": null,
+        "unit": null,
+        "evidence": [],
+        "evidence_count": 0
+      }
+    ]
+  },
+  "verification": {
+    "status": "needs_review",
+    "checks": [
+      {
+        "claim_id": "rev_total",
+        "status": "pass",
+        "reason": "Evidence present."
+      },
+      {
+        "claim_id": "profit_positive",
+        "status": "fail",
+        "reason": "Missing evidence."
+      }
+    ],
+    "summary": "evidence_coverage=0.500 (1/2), threshold=1.0"
+  },
+  "release": {
+    "decision": "hold",
+    "reason": "Verification incomplete; human review or additional evidence required."
+  },
+  "extra": {
+    "run_idx": 2,
+    "runs": 3,
+    "run_agents": true,
+    "eval_metrics": {
+      "numeric_agreement": null,
+      "unsupported_claims": null,
+      "factscore": null,
+      "ragas": null
+    },
+    "eval_smoke_ok": true,
+    "agent_error": ""
+  }
+}
